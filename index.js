@@ -1,13 +1,17 @@
 const express = require("express");
 const server = express();
 
-const projetos = ["teste 1", "teste 2", "teste 3"];
+server.use(express.json());
+
+const projetos = [];
 
 server.post("/projects", (req, res) => {
-  const { id } = req.params;
-  const { title } = req.params;
-  console.log(id);
-  console.log(title);
+  const { id } = req.body;
+  const { title } = req.body;
+
+  var projeto = `{ id: ${id}, title: ${title}, task: [] }`;
+  projetos.push(projeto);
+
   return res.json(projetos);
 });
 
@@ -17,15 +21,30 @@ server.get("/projects", (req, res) => {
 
 server.put("/projects/:id", (req, res) => {
   const { id } = req.params;
-  return null;
+  const { title } = req.body;
+
+  var projeto = `{ id: ${id}, title: ${title}, task: [] }`;
+  projetos[id] = projeto;
+
+  return res.json(projetos);
 });
 
 server.delete("/projects/:id", (req, res) => {
-  return null;
+  const { id } = req.params;
+  projetos.splice(id, 1);
+
+  return res.json(projetos);
 });
 
-server.post("/projects/:id/tasks", (res, req) => {
-  return null;
+server.post("/projects/:id/tasks", (req, res) => {
+  const { id } = req.params;
+  const { title } = req.body;
+  const { task } = req.body;
+
+  var projeto = `{ id: ${id}, title: ${title}, task: [${task}] }`;
+  projetos[id] = projeto;
+
+  return res.json(projetos);
 });
 
 server.listen(3000);
