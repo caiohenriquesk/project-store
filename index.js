@@ -1,94 +1,100 @@
 const express = require("express");
+
 const server = express();
 
 server.use(express.json());
 
-const projetos = [];
-var callCount = 0;
+/**
+ * Utilizamos a variável `numberOfRequests` como
+ * `let` porque vai sofrer mutação. A variável
+ * `projects` pode ser `const` porque um `array`
+ * pode receber adições ou exclusões mesmo sendo
+ * uma constante.
+ */
+let numberOfRequests = 0;
+const projects = [];
 
-//middleware's
-server.use((req, res, next) => {
-  next();
-  callCount++;
-  console.log("Foi chamado " + callCount + " vezes.");
-});
-
-function checkProjeto(req, res, next) {
+/**
+ * Middleware que checa se o projeto existe
+ */
+function checkProjectExists(req, res, next) {
   const { id } = req.params;
-  var have = false;
+  const project = projects.find(p => p.id === id);
 
-  for (projeto of projetos) {
-    if (projeto.id == id) {
-      have = true;
-    }
-  }
-
-  if (!have) {
-    return res.status(400).json({ error: "There isnt this id" });
+  if (!project) {
+    return res.status(400).json({ error: "Project not found" });
   }
 
   return next();
 }
 
-server.post("/projects", (req, res) => {
-  const { id } = req.body;
-  const { title } = req.body;
+/**
+ * Middleware que dá log no número de requisições
+ */
+function logRequests(req, res, next) {
+  numberOfRequests++;
 
-  var projeto = { id: id, title: title, tasks: [] };
-  projetos.push(projeto);
+  console.log(`Número de requisições: ${numberOfRequests}`);
 
-  return res.json(projetos);
-});
+  return next();
+}
 
+server.use(logRequests);
+
+/**
+ * Projects
+ */
 server.get("/projects", (req, res) => {
-  return res.json(projetos);
+  return res.json(projects);
 });
 
-server.put("/projects/:id", checkProjeto, (req, res) => {
+server.post("/projects", (req, res) => {
+  const { id, title } = req.body;
+
+  const project = {
+    id,
+    title,
+    tasks: []
+  };
+
+  projects.push(project);
+
+  return res.json(project);
+});
+
+server.put("/projects/:id", checkProjectExists, (req, res) => {
   const { id } = req.params;
   const { title } = req.body;
 
-  for (projeto of projetos) {
-    if (projeto.id == id) {
-      projeto.title = title;
-    }
-  }
+  const project = projects.find(p => p.id === id);
 
-  return res.json(projetos);
+  project.title = title;
+
+  return res.json(project);
 });
 
-server.delete("/projects/:id", checkProjeto, (req, res) => {
+server.delete("/projects/:id", checkProjectExists, (req, res) => {
   const { id } = req.params;
 
-  var count = 0;
-  var positionToDelete = [];
-  for (projeto of projetos) {
-    if (projeto.id == id) {
-      positionToDelete.push(count);
-    }
-    count++;
-  }
+  const projectIndex = projects.findIndex(p => p.id === id);
 
-  if (positionToDelete !== []) {
-    for (obj of positionToDelete) {
-      projetos.splice(obj);
-    }
-  }
+  projects.splice(projectIndex, 1);
 
-  return res.json(projetos);
+  return res.send();
 });
 
-server.post("/projects/:id/tasks", checkProjeto, (req, res) => {
+/**
+ * Tasks
+ */
+server.post("/projects/:id/tasks", checkProjectExists, (req, res) => {
   const { id } = req.params;
   const { title } = req.body;
 
-  for (projeto of projetos) {
-    if (projeto.id == id) {
-      projeto.tasks.push(title);
-    }
-  }
+  const project = projects.find(p => p.id === id);
 
-  return res.json(projetos);
+  project.tasks.push(title);
+
+  return res.json(project);
 });
 
 server.listen(3000);
